@@ -191,7 +191,6 @@ func makeMarkdown(slackMessages []SlackMessage, output *os.File) error {
 				}
 			}
 		}
-		_, err = output.WriteString("\n")
 		if err != nil {
 			return err
 		}
@@ -222,7 +221,6 @@ func convertToMd(msg slack.Msg) ([]string, error) {
 						default:
 							fmt.Printf("unknown section element: %+#v\n", secElem)
 						}
-						fmt.Printf("%+#v\n", secElem)
 					}
 				case slack.RTEPreformatted:
 					part, err := convertRichTextPreformattedToMd(elem)
@@ -283,7 +281,7 @@ func convertRichTextPreformattedToMd(elem slack.RichTextElement) ([]string, erro
 			md = append(md, preformatted.Text)
 		}
 	}
-	md = append(md, "\n```\n")
+	md = append(md, "\n```")
 	return md, nil
 }
 
@@ -301,8 +299,10 @@ type RichTextListSection struct {
 }
 
 type RichTextListSectionElement struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
+	Type  string                          `json:"type"`
+	Text  string                          `json:"text"`
+	Url   string                          `json:"url"`
+	Style *slack.RichTextSectionTextStyle `json:"style,omitempty"`
 }
 
 func convertRichTextListToMd(elem slack.RichTextElement) ([]string, error) {
@@ -322,7 +322,16 @@ func convertRichTextListToMd(elem slack.RichTextElement) ([]string, error) {
 	}
 	list := []string{}
 	for _, elem := range rtl.Elements {
-		list = append(list, space+head+elem.Elements[0].Text+"\n")
+		content := ""
+		for _, el := range elem.Elements {
+			switch el.Type {
+			case "text":
+				content = content + decorate(el.Text, el.Style)
+			case "link":
+				content = content + el.Url
+			}
+		}
+		list = append(list, space+head+content+"\n")
 	}
 	return list, nil
 }
@@ -350,7 +359,7 @@ func convertRichTextQuoteToMd(elem slack.RichTextElement) (string, error) {
 			ss = append(ss, "> "+s)
 		}
 	}
-	return strings.Join(ss, "  \n") + "\n", nil
+	return strings.Join(ss, "  \n"), nil
 }
 
 // RichTextSectionElement
@@ -365,17 +374,22 @@ func convertRichTextSectionLinkToMd(elem slack.RichTextSectionElement) []string 
 func convertRichTextSectionTextToMd(elem slack.RichTextSectionElement) string {
 	text := elem.(*slack.RichTextSectionTextElement)
 	deco := strings.Replace(text.Text, "\n", "  \n", -1)
-	if text.Style != nil {
-		if text.Style.Code {
+	return decorate(deco, text.Style)
+}
+
+func decorate(text string, style *slack.RichTextSectionTextStyle) string {
+	deco := text
+	if style != nil {
+		if style.Code {
 			deco = "`" + deco + "`"
 		}
-		if text.Style.Strike {
+		if style.Strike {
 			deco = "~~" + deco + "~~"
 		}
-		if text.Style.Italic {
+		if style.Italic {
 			deco = "*" + deco + "*"
 		}
-		if text.Style.Bold {
+		if style.Bold {
 			deco = "**" + deco + "**"
 		}
 	}

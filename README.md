@@ -55,8 +55,6 @@ Message
   - Quote
 
 # Not Suppport
-- Complex RichText
-  - ex: RichTextSectionText in List
 - Paging
   - using api default limit(100 per channel)
 - Specify retriving period 
