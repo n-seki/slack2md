@@ -47,9 +47,9 @@ Message
 # Support
 - Message
 - Reply
-- Simple RichText
+- RichText
   - Preformatted
-  - List
+  - List(bullet, ordered)
   - Style
   - Link
   - Quote

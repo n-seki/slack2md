@@ -314,11 +314,15 @@ func convertRichTextListToMd(elem slack.RichTextElement) ([]string, error) {
 	}
 	space := ""
 	for i := 0; i < rtl.Indent; i++ {
-		space = space + "  "
+		space = space + "   "
+	}
+	head := "* "
+	if rtl.Style == "ordered" {
+		head = "1. "
 	}
 	list := []string{}
 	for _, elem := range rtl.Elements {
-		list = append(list, space+" * "+elem.Elements[0].Text+"\n")
+		list = append(list, space+head+elem.Elements[0].Text+"\n")
 	}
 	return list, nil
 }
