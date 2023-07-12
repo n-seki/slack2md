@@ -25,27 +25,38 @@ type Message struct {
 	relies []slack.Msg
 }
 
-var token string
-var outputFile string
-var includeUserId []string
-var includeChannelId []string
-
 var cmd = &cobra.Command{
 	Use:   "slack2md",
 	Short: "save slack messages as Markdown file",
 	Run: func(cmd *cobra.Command, args []string) {
-		slack2md()
+		token, err := cmd.Flags().GetString("token")
+		if err != nil {
+			log.Fatal(err)
+		}
+		channels, err := cmd.Flags().GetStringArray("channels")
+		if err != nil {
+			log.Fatal(err)
+		}
+		users, err := cmd.Flags().GetStringArray("users")
+		if err != nil {
+			log.Fatal(err)
+		}
+		output, err := cmd.Flags().GetString("output")
+		if err != nil {
+			log.Fatal(err)
+		}
+		Slack2md(token, channels, users, output)
 	},
 }
 
 func init() {
 	cobra.OnInitialize()
-	cmd.PersistentFlags().StringVarP(&token, "token", "t", "", "slack api token (required)")
+	cmd.PersistentFlags().StringP("token", "t", "", "slack api token (required)")
 	cmd.MarkPersistentFlagRequired("token")
-	cmd.PersistentFlags().StringArrayVarP(&includeUserId, "users", "u", nil, "include user id (option)")
-	cmd.PersistentFlags().StringArrayVarP(&includeChannelId, "channels", "c", []string{}, "include channel id (required)")
+	cmd.PersistentFlags().StringArrayP("channels", "c", nil, "include channel id (required)")
 	cmd.MarkPersistentFlagRequired("channels")
-	cmd.PersistentFlags().StringVarP(&outputFile, "output", "o", "", "output file (required)")
+	cmd.PersistentFlags().StringArrayP("users", "u", nil, "include user id (option)")
+	cmd.PersistentFlags().StringP("output", "o", "", "output file (required)")
 	cmd.MarkPersistentFlagRequired("output")
 }
 
@@ -53,12 +64,17 @@ func Execute() error {
 	return cmd.Execute()
 }
 
-func slack2md() {
-	slackMessages, err := getSlackMessages()
+func Slack2md(
+	token string,
+	includeChannels []string,
+	includeUsers []string,
+	output string,
+) {
+	slackMessages, err := getSlackMessages(token, includeChannels, includeUsers)
 	if err != nil {
 		log.Fatal(err)
 	}
-	f, err := os.Create(outputFile)
+	f, err := os.Create(output)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -69,7 +85,11 @@ func slack2md() {
 	}
 }
 
-func getSlackMessages() ([]SlackMessage, error) {
+func getSlackMessages(
+	token string,
+	includeChannels []string,
+	includeUsers []string,
+) ([]SlackMessage, error) {
 	api := slack.New(token)
 
 	conversationsParam := slack.GetConversationsParameters{
@@ -91,11 +111,11 @@ func getSlackMessages() ([]SlackMessage, error) {
 	}
 
 	slackMessages := []SlackMessage{}
-	for _, channelID := range includeChannelId {
+	for _, channelID := range includeChannels {
 		if _, ok := allChannelName[channelID]; !ok {
 			continue
 		}
-		messages, err := getMessages(*api, channelID, latest)
+		messages, err := getMessages(*api, channelID, latest, includeUsers)
 		if err != nil {
 			return nil, err
 		}
@@ -116,6 +136,7 @@ func getMessages(
 	api slack.Client,
 	channelID string,
 	latest string,
+	includeUsers []string,
 ) ([]Message, error) {
 	param := slack.GetConversationHistoryParameters{
 		ChannelID: channelID,
@@ -134,7 +155,7 @@ func getMessages(
 	l := len(conversation.Messages)
 	for i := (l - 1); i >= 0; i-- {
 		m := conversation.Messages[i]
-		if includeUserId != nil && !slices.Contains(includeUserId, m.User) {
+		if includeUsers != nil && !slices.Contains(includeUsers, m.User) {
 			continue
 		}
 		message := Message{msg: m.Msg}
