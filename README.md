@@ -1,11 +1,11 @@
 # slack2md
 
 `slack2md` is a cli tool.<br>
-It saves slack messages as Markdown file.
+`slack2md` get Slack messages and convert them to Markdown format.
 
 ```
 $ ./slack2md --help
-save slack messages as Markdown file
+slack2md get Slack messages and convert them to Markdown format
 
 Usage:
   slack2md [flags]
@@ -44,7 +44,7 @@ Reply
 Message
 ```
 
-# Support
+# Supported
 - Message
 - Reply
 - RichText
@@ -54,8 +54,8 @@ Message
   - Link
   - Quote
 
-# Not Suppport
+# Not currently supported
 - Paging
   - using api default limit(100 per channel)
 - Specify retriving period 
-  - Currently, slack2md get messages within just 24 hours.
+  - slack2md get messages within just 24 hours.

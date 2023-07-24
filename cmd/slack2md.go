@@ -27,7 +27,7 @@ type Message struct {
 
 var cmd = &cobra.Command{
 	Use:   "slack2md",
-	Short: "save slack messages as Markdown file",
+	Short: "slack2md get Slack messages and convert them to Markdown format",
 	Run: func(cmd *cobra.Command, args []string) {
 		token, err := cmd.Flags().GetString("token")
 		if err != nil {
