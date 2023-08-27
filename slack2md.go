@@ -283,7 +283,7 @@ type RichTextListSectionElement struct {
 	Type  string                          `json:"type"`
 	Text  string                          `json:"text"`
 	Url   string                          `json:"url"`
-	Style *slack.RichTextSectionTextStyle `json:"style,omitempty"`
+	Style *slack.RichTextSectionTextStyle `json:"style"`
 }
 
 func convertRichTextListToMd(elem slack.RichTextElement) ([]string, error) {
@@ -323,8 +323,9 @@ type RichTextQuote struct {
 }
 
 type RichTextQuoteElement struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
+	Type  string                          `json:"type"`
+	Text  string                          `json:"text"`
+	Style *slack.RichTextSectionTextStyle `json:"style"`
 }
 
 func convertRichTextQuoteToMd(elem slack.RichTextElement) (string, error) {
@@ -334,13 +335,11 @@ func convertRichTextQuoteToMd(elem slack.RichTextElement) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	ss := []string{}
+	text := "> "
 	for _, elem := range rtq.Elements {
-		for _, s := range strings.Split(elem.Text, "\n") {
-			ss = append(ss, "> "+s)
-		}
+		text = text + decorate(elem.Text, elem.Style)
 	}
-	return strings.Join(ss, "  \n"), nil
+	return strings.Replace(text, "\n", "  \n> ", -1) + "\n\n", nil
 }
 
 // RichTextSectionElement
