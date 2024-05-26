@@ -27,7 +27,11 @@ var cmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		slack2md.Slack2md(token, channels, users, output)
+		since, err := cmd.Flags().GetInt("since")
+		if err != nil {
+			log.Fatal(err)
+		}
+		slack2md.Slack2md(token, channels, users, output, since)
 	},
 }
 
@@ -40,6 +44,7 @@ func init() {
 	cmd.PersistentFlags().StringArrayP("users", "u", nil, "include user id (option)")
 	cmd.PersistentFlags().StringP("output", "o", "", "output file (required)")
 	cmd.MarkPersistentFlagRequired("output")
+	cmd.PersistentFlags().IntP("since", "s", 1, "since x days ago")
 }
 
 func main() {

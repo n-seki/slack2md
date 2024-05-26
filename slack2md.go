@@ -29,8 +29,9 @@ func Slack2md(
 	includeChannels []string,
 	includeUsers []string,
 	output string,
+	since int,
 ) {
-	slackMessages, err := getSlackMessages(token, includeChannels, includeUsers)
+	slackMessages, err := getSlackMessages(token, includeChannels, includeUsers, since)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -49,6 +50,7 @@ func getSlackMessages(
 	token string,
 	includeChannels []string,
 	includeUsers []string,
+	since int,
 ) ([]SlackMessage, error) {
 	api := slack.New(token)
 
@@ -60,7 +62,7 @@ func getSlackMessages(
 	if err != nil {
 		return nil, err
 	}
-	latest := strconv.FormatInt(time.Now().Add(time.Hour*-24).Unix(), 10)
+	latest := strconv.FormatInt(time.Now().AddDate(0, 0, -since).Unix(), 10)
 	if err != nil {
 		return nil, err
 	}
