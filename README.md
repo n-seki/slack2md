@@ -11,9 +11,10 @@ Usage:
   slack2md [flags]
 
 Flags:
-  -c, --channels stringArray   include channel id (option)
+  -c, --channels stringArray   include channel id (required)
   -h, --help                   help for slack2md
   -o, --output string          output file (required)
+  -s, --since int              since x days ago (default 1)
   -t, --token string           slack api token (required)
   -u, --users stringArray      include user id (option)
 ```
@@ -27,6 +28,7 @@ Example:
     --channels slack_chanel_1_id \
     --channels slack_chanel_2_id \
     --users user_id
+    --since 1
 ```
 
 then `20230101.md` ceated with below content
@@ -57,5 +59,3 @@ Message
 # Not currently supported
 - Paging
   - using api default limit(100 per channel)
-- Specify retriving period 
-  - slack2md get messages within just 24 hours.
