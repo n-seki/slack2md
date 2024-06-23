@@ -117,7 +117,7 @@ func getMessages(
 	l := len(conversation.Messages)
 	for i := (l - 1); i >= 0; i-- {
 		m := conversation.Messages[i]
-		if includeUsers != nil && !slices.Contains(includeUsers, m.User) {
+		if includeUsers != nil && !slices.Contains(includeUsers, m.User) && !slices.Contains(includeUsers, m.BotID) {
 			continue
 		}
 		message := Message{msg: m.Msg}
