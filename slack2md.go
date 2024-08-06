@@ -30,6 +30,7 @@ func Slack2md(
 	includeUsers []string,
 	output string,
 	since int,
+	noChannelName bool,
 ) {
 	slackMessages, err := getSlackMessages(token, includeChannels, includeUsers, since)
 	if err != nil {
@@ -40,7 +41,7 @@ func Slack2md(
 		log.Fatal(err)
 	}
 	defer f.Close()
-	err = makeMarkdown(slackMessages, f)
+	err = makeMarkdown(slackMessages, f, noChannelName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -139,11 +140,13 @@ func getMessages(
 	return messages, nil
 }
 
-func makeMarkdown(slackMessages []SlackMessage, output *os.File) error {
+func makeMarkdown(slackMessages []SlackMessage, output *os.File, noChannelName bool) error {
 	for _, slackMessage := range slackMessages {
-		_, err := output.WriteString("# " + slackMessage.channelName + "\n")
-		if err != nil {
-			return err
+		if !noChannelName {
+			_, err := output.WriteString("# " + slackMessage.channelName + "\n")
+			if err != nil {
+				return err
+			}
 		}
 
 		for _, message := range slackMessage.messages {
@@ -173,9 +176,6 @@ func makeMarkdown(slackMessages []SlackMessage, output *os.File) error {
 					}
 				}
 			}
-		}
-		if err != nil {
-			return err
 		}
 	}
 	return nil

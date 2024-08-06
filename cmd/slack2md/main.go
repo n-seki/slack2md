@@ -31,7 +31,11 @@ var cmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		slack2md.Slack2md(token, channels, users, output, since)
+		noChannelName, err := cmd.Flags().GetBool("no-channel-name")
+		if err != nil {
+			log.Fatal(err)
+		}
+		slack2md.Slack2md(token, channels, users, output, since, noChannelName)
 	},
 }
 
@@ -45,6 +49,7 @@ func init() {
 	cmd.PersistentFlags().StringP("output", "o", "", "output file (required)")
 	cmd.MarkPersistentFlagRequired("output")
 	cmd.PersistentFlags().IntP("since", "s", 1, "since x days ago")
+	cmd.PersistentFlags().Bool("no-channel-name", false, "Do not output channel name as section title")
 }
 
 func main() {
