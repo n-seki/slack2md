@@ -13,6 +13,7 @@ Usage:
 Flags:
   -c, --channels stringArray   include channel id (required)
   -h, --help                   help for slack2md
+      --no-channel-name        Do not output channel name as section title
   -o, --output string          output file (required)
   -s, --since int              since x days ago (default 1)
   -t, --token string           slack api token (required)
