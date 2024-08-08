@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"path/filepath"
 
 	"github.com/n-seki/slack2md"
 	"github.com/spf13/cobra"
@@ -15,27 +16,18 @@ var cmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		channels, err := cmd.Flags().GetStringArray("channels")
+		configPath, err := cmd.Flags().GetString("config")
 		if err != nil {
 			log.Fatal(err)
 		}
-		users, err := cmd.Flags().GetStringArray("users")
-		if err != nil {
-			log.Fatal(err)
+		absConfigPath := ""
+		if len(configPath) > 0 {
+			absConfigPath, err = filepath.Abs(configPath)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
-		output, err := cmd.Flags().GetString("output")
-		if err != nil {
-			log.Fatal(err)
-		}
-		since, err := cmd.Flags().GetInt("since")
-		if err != nil {
-			log.Fatal(err)
-		}
-		noChannelName, err := cmd.Flags().GetBool("no-channel-name")
-		if err != nil {
-			log.Fatal(err)
-		}
-		slack2md.Slack2md(token, channels, users, output, since, noChannelName)
+		slack2md.Slack2md(token, absConfigPath)
 	},
 }
 
@@ -43,13 +35,8 @@ func init() {
 	cobra.OnInitialize()
 	cmd.PersistentFlags().StringP("token", "t", "", "slack api token (required)")
 	cmd.MarkPersistentFlagRequired("token")
-	cmd.PersistentFlags().StringArrayP("channels", "c", nil, "include channel id (required)")
-	cmd.MarkPersistentFlagRequired("channels")
-	cmd.PersistentFlags().StringArrayP("users", "u", nil, "include user id (option)")
-	cmd.PersistentFlags().StringP("output", "o", "", "output file (required)")
-	cmd.MarkPersistentFlagRequired("output")
-	cmd.PersistentFlags().IntP("since", "s", 1, "since x days ago")
-	cmd.PersistentFlags().Bool("no-channel-name", false, "Do not output channel name as section title")
+	cmd.PersistentFlags().String("config", "", "Path to config yaml (requred)")
+	cmd.MarkPersistentFlagRequired("config")
 }
 
 func main() {

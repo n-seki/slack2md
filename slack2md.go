@@ -2,6 +2,7 @@ package slack2md
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	"github.com/slack-go/slack"
 	"golang.org/x/exp/slices"
 )
@@ -24,24 +26,66 @@ type Message struct {
 	relies []slack.Msg
 }
 
+type Slack2mdConfg struct {
+	Output         string          `yaml:"output"`
+	Since          int             `yaml:"since"`
+	Users          []string        `yaml:"users"`
+	ChannelConfigs []ChannelConfig `yaml:"channels"`
+}
+
+type ChannelConfig struct {
+	Id       string   `yaml:"id"`
+	Header   string   `yaml:"header"`
+	NoHeader bool     `yaml:"no_header"`
+	Users    []string `yaml:"users"`
+}
+
+func (config Slack2mdConfg) getIncludeChannels() []string {
+	channels := []string{}
+	for _, channelConfig := range config.ChannelConfigs {
+		channels = append(channels, channelConfig.Id)
+	}
+	return channels
+}
+
+func (config Slack2mdConfg) getIncludeUsers() map[string][]string {
+	users := make(map[string][]string)
+	for _, channelConfig := range config.ChannelConfigs {
+		if len(channelConfig.Users) > 0 {
+			users[channelConfig.Id] = channelConfig.Users
+		} else {
+			users[channelConfig.Id] = config.Users
+		}
+	}
+	return users
+}
+
+func (config Slack2mdConfg) getChannelConfig() map[string]ChannelConfig {
+	configs := make(map[string]ChannelConfig)
+	for _, channelConfig := range config.ChannelConfigs {
+		configs[channelConfig.Id] = channelConfig
+	}
+	return configs
+}
+
 func Slack2md(
 	token string,
-	includeChannels []string,
-	includeUsers []string,
-	output string,
-	since int,
-	noChannelName bool,
+	configPath string,
 ) {
-	slackMessages, err := getSlackMessages(token, includeChannels, includeUsers, since)
+	config, err := readConfig(configPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	f, err := os.Create(output)
+	slackMessages, err := getSlackMessages(token, config.getIncludeChannels(), config.getIncludeUsers(), config.Since)
+	if err != nil {
+		log.Fatal(err)
+	}
+	f, err := os.Create(config.Output)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer f.Close()
-	err = makeMarkdown(slackMessages, f, noChannelName)
+	err = makeMarkdown(slackMessages, f, config.getChannelConfig())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -50,7 +94,7 @@ func Slack2md(
 func getSlackMessages(
 	token string,
 	includeChannels []string,
-	includeUsers []string,
+	includeUsers map[string][]string,
 	since int,
 ) ([]SlackMessage, error) {
 	api := slack.New(token)
@@ -78,7 +122,7 @@ func getSlackMessages(
 		if _, ok := allChannelName[channelID]; !ok {
 			continue
 		}
-		messages, err := getMessages(*api, channelID, latest, includeUsers)
+		messages, err := getMessages(*api, channelID, latest, includeUsers[channelID])
 		if err != nil {
 			return nil, err
 		}
@@ -140,10 +184,19 @@ func getMessages(
 	return messages, nil
 }
 
-func makeMarkdown(slackMessages []SlackMessage, output *os.File, noChannelName bool) error {
+func makeMarkdown(
+	slackMessages []SlackMessage,
+	output *os.File,
+	channelConfig map[string]ChannelConfig,
+) error {
 	for _, slackMessage := range slackMessages {
-		if !noChannelName {
-			_, err := output.WriteString("# " + slackMessage.channelName + "\n")
+		config := channelConfig[slackMessage.channelID]
+		if !config.NoHeader {
+			header := slackMessage.channelName
+			if len(config.Header) > 0 {
+				header = config.Header
+			}
+			_, err := output.WriteString("# " + header + "\n")
 			if err != nil {
 				return err
 			}
@@ -376,4 +429,21 @@ func decorate(text string, style *slack.RichTextSectionTextStyle) string {
 		}
 	}
 	return deco
+}
+
+func readConfig(path string) (Slack2mdConfg, error) {
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		return Slack2mdConfg{}, err
+	}
+	config := Slack2mdConfg{}
+	err = yaml.Unmarshal(bytes, &config)
+	if err != nil {
+		return Slack2mdConfg{}, err
+	}
+	if len(config.Output) == 0 {
+		err := errors.New("missiing yaml field: output")
+		return Slack2mdConfg{}, err
+	}
+	return config, nil
 }
