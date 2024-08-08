@@ -11,38 +11,57 @@ Usage:
   slack2md [flags]
 
 Flags:
-  -c, --channels stringArray   include channel id (required)
-  -h, --help                   help for slack2md
-      --no-channel-name        Do not output channel name as section title
-  -o, --output string          output file (required)
-  -s, --since int              since x days ago (default 1)
-  -t, --token string           slack api token (required)
-  -u, --users stringArray      include user id (option)
+      --config string   Path to config yaml (requred)
+  -h, --help            help for slack2md
+  -t, --token string    slack api token (required)
+```
+
+Config YAML format
+
+```yaml
+output: string # path/to/markdown (required)
+since: int # since x days ago (default: 1)
+users: string array # include user id
+channels:
+  - id: string # slack channel id
+    header: string # markdown header (default: slack channel name)
+    no_header: bool # not output markdown header (default: false)
+    usres: string array # include user id (override global settings)
+  - id: string
+    header: string
+    no_header: bool
+    usres: string array
 ```
 
 Example:
 
+```yaml
+output: ./20240808.md
+since: 1
+users: [user_id_1, user_id_2]
+channels:
+  - id: CXXXXXXA
+    header: HEADER1
+  - id: CXXXXXXB
 ```
+
+```sh
 ./slack2md \
     --token your_slack_token_with_read_scope \
-    --output 20230101.md \
-    --channels slack_chanel_1_id \
-    --channels slack_chanel_2_id \
-    --users user_id
-    --since 1
+    --config config.yaml
 ```
 
-then `20230101.md` ceated with below content
+then `20240808.md` ceated with below content
 
-```
-# channel 1 name
+```md
+# HEADER1
 
 Message
 
 Reply
 
 
-# channel 2 name
+# CXXXXXXB Channel Name
 
 Message
 ```
