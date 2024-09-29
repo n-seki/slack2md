@@ -34,10 +34,11 @@ type Slack2mdConfg struct {
 }
 
 type ChannelConfig struct {
-	Id       string   `yaml:"id"`
-	Header   string   `yaml:"header"`
-	NoHeader bool     `yaml:"no_header"`
-	Users    []string `yaml:"users"`
+	Id        string   `yaml:"id"`
+	Header    string   `yaml:"header"`
+	NoHeader  bool     `yaml:"no_header"`
+	Users     []string `yaml:"users"`
+	Timestamp bool     `yaml:"timestamp"`
 }
 
 func (config Slack2mdConfg) getIncludeChannels() []string {
@@ -207,6 +208,11 @@ func makeMarkdown(
 			if err != nil {
 				return nil
 			}
+			if config.Timestamp {
+				timestamp := timestamp(message.msg)
+				fmt.Println(timestamp)
+				_, _ = output.WriteString(timestamp + "\n")
+			}
 			for _, line := range md {
 				_, err = output.WriteString(line)
 				if err != nil {
@@ -221,6 +227,10 @@ func makeMarkdown(
 				md, err = convertToMd(reply)
 				if err != nil {
 					return err
+				}
+				if config.Timestamp {
+					timestamp := timestamp(reply)
+					_, _ = output.WriteString(timestamp + "\n")
 				}
 				for _, line := range md {
 					_, err = output.WriteString(line)
@@ -442,8 +452,18 @@ func readConfig(path string) (Slack2mdConfg, error) {
 		return Slack2mdConfg{}, err
 	}
 	if len(config.Output) == 0 {
-		err := errors.New("missiing yaml field: output")
+		err := errors.New("missing yaml field: output")
 		return Slack2mdConfg{}, err
 	}
 	return config, nil
+}
+
+func timestamp(msg slack.Msg) string {
+	ts := strings.Split(msg.Timestamp, ".")[0]
+	timestamp, err := strconv.Atoi(ts)
+	if err != nil {
+		log.Fatal(err)
+	}
+	t := time.Unix(int64(timestamp), 0).Local()
+	return t.Format("15:04")
 }
