@@ -27,6 +27,7 @@ channels:
     header: string # markdown header (default: slack channel name)
     no_header: bool # not output markdown header (default: false)
     usres: string array # include user id (override global settings)
+    timestamp: bool # show timestamp (default: false)
   - id: string
     header: string
     no_header: bool
@@ -43,6 +44,7 @@ channels:
   - id: CXXXXXXA
     header: HEADER1
   - id: CXXXXXXB
+    timestamp: true
 ```
 
 ```sh
@@ -63,6 +65,7 @@ Reply
 
 # CXXXXXXB Channel Name
 
+15:04
 Message
 ```
 
